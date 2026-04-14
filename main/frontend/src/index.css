@@ -1,0 +1,114 @@
+/* Modern globális stílusok */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f8fafc;
+  background-image: url('/globe.png');
+  background-repeat: no-repeat;
+  background-size: 800px;
+  background-position: center 30%;
+  background-attachment: fixed;
+  transition: background-color 0.3s, color 0.3s;
+  line-height: 1.6;
+}
+
+/* Modern görgetősáv */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Loading animáció */
+.loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.loading-text {
+  z-index: 2;
+  text-align: center;
+  padding: 30px 40px;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 60px;
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  box-shadow: 0 20px 30px -10px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Általános gomb stílusok */
+button {
+  padding: 12px 28px;
+  margin: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  border-radius: 40px;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  box-shadow: 0 5px 15px -5px rgba(0,0,0,0.2);
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 20px -8px rgba(0,0,0,0.3);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Címek */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  color: #1e293b;
+  font-size: 24px;
+  margin-top: 30px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+/* Animációk */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

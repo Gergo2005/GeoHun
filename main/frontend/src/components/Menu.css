@@ -1,0 +1,120 @@
+.menu-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.members-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 20px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.members-list table {
+  width: 100%;
+}
+
+.members-list th {
+  background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.game-settings {
+  margin: 30px 0;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.round-buttons,
+.location-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.round-choice,
+.location-choice {
+  flex: 1;
+  padding: 15px;
+  font-size: 16px;
+  background-color: #e9ecef;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.round-choice:hover,
+.location-choice:hover {
+  background-color: #dee2e6;
+}
+
+.round-choice.selected,
+.location-choice.selected {
+  background-color: #4CAF50;
+  color: white;
+  border-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+#start-game {
+  background: linear-gradient(135deg, #FF5722, #FF9800);
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  padding: 15px 40px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 200px;
+}
+
+#start-game:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(255, 87, 34, 0.3);
+}
+
+#start-game:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#exit-game {
+  background-color: #757575;
+  color: white;
+  font-size: 16px;
+  padding: 15px 30px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+#exit-game:hover {
+  background-color: #616161;
+  transform: translateY(-2px);
+}
+
+.loading-members,
+.error-members {
+  text-align: center;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin: 20px 0;
+}
