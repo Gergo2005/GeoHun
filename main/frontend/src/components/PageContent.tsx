@@ -49,6 +49,9 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [errorLeaderboard, setErrorLeaderboard] = useState<string | null>(null);
 
+  // Custom confirm dialog state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const products = [
     { id: 1, name: 'Haladó szint', price: 1249, image: kep1 },
     { id: 2, name: 'Lehetetlen szint', price: 2499, image: kep2 },
@@ -195,25 +198,33 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const performDeleteAccount = async () => {
     if (!userId) return;
-    
-    if (window.confirm('Biztosan törölni szeretnéd a fiókodat? Ez a művelet nem visszavonható!')) {
-      try {
-        const response = await fetch(`http://localhost:3000/auth/delete/${userId}`, {
-          method: 'DELETE',
-        });
-        
-        if (response.ok) {
-          alert('Fiók sikeresen törölve!');
+    try {
+      const response = await fetch(`http://localhost:3000/auth/delete/${userId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setShowDeleteConfirm(false);
+        setMessage({ text: 'Fiók sikeresen törölve!', type: 'success' });
+        setTimeout(() => {
           onLogout();
-        } else {
-          alert('Hiba történt a fiók törlése során');
-        }
-      } catch (error) {
-        alert('Hálózati hiba történt');
+        }, 1800);
+      } else {
+        setMessage({ text: 'Hiba történt a fiók törlése során', type: 'error' });
       }
+    } catch (error) {
+      setMessage({ text: 'Hálózati hiba történt', type: 'error' });
     }
+  };
+
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const closeDeleteConfirm = () => {
+    setShowDeleteConfirm(false);
   };
 
   const getTitle = () => {
@@ -622,8 +633,97 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
       padding: '40px',
       color: darkMode ? '#94a3b8' : '#64748b',
       fontSize: '16px'
+    },
+    // Modal stílusok (új)
+    modalOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      backdropFilter: 'blur(5px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10000,
+      animation: 'fadeIn 0.2s ease'
+    },
+    modalContent: {
+      background: darkMode ? '#2d2d3a' : '#ffffff',
+      borderRadius: '32px',
+      padding: '30px',
+      maxWidth: '450px',
+      width: '90%',
+      boxShadow: darkMode 
+        ? '0 25px 40px -12px rgba(0,0,0,0.6)' 
+        : '0 25px 40px -12px rgba(0,0,0,0.3)',
+      textAlign: 'center',
+      animation: 'slideUp 0.3s ease'
+    },
+    modalTitle: {
+      fontSize: '24px',
+      fontWeight: 700,
+      marginBottom: '15px',
+      color: darkMode ? '#e2e8f0' : '#1e293b'
+    },
+    modalText: {
+      fontSize: '16px',
+      color: darkMode ? '#cbd5e1' : '#475569',
+      marginBottom: '25px',
+      lineHeight: 1.5
+    },
+    modalButtons: {
+      display: 'flex',
+      gap: '15px',
+      justifyContent: 'center'
+    },
+    modalCancelButton: {
+      padding: '12px 24px',
+      background: darkMode ? '#3d3d4e' : '#e2e8f0',
+      color: darkMode ? '#e2e8f0' : '#334155',
+      border: 'none',
+      borderRadius: '40px',
+      cursor: 'pointer',
+      fontSize: '16px',
+      fontWeight: 600,
+      transition: 'all 0.2s',
+      flex: 1
+    },
+    modalConfirmButton: {
+      padding: '12px 24px',
+      background: '#ef4444',
+      color: 'white',
+      border: 'none',
+      borderRadius: '40px',
+      cursor: 'pointer',
+      fontSize: '16px',
+      fontWeight: 600,
+      transition: 'all 0.2s',
+      flex: 1,
+      boxShadow: '0 8px 15px -5px rgba(239,68,68,0.4)'
     }
   };
+
+  // Globális animációk beszúrása (ha még nincs)
+  if (typeof document !== 'undefined') {
+    const styleId = 'pagecontent-modal-animations';
+    if (!document.getElementById(styleId)) {
+      const styleSheet = document.createElement("style");
+      styleSheet.id = styleId;
+      styleSheet.innerText = `
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `;
+      document.head.appendChild(styleSheet);
+    }
+  }
 
   // ---------------------- RENDER ----------------------
   const renderContent = () => {
@@ -925,6 +1025,47 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
       >
         Vissza a főmenübe
       </button>
+
+      {/* Custom Confirm Modal */}
+      {showDeleteConfirm && (
+        <div style={styles.modalOverlay} onClick={closeDeleteConfirm}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3 style={styles.modalTitle}>Fiók törlése</h3>
+            <p style={styles.modalText}>
+              Biztosan törölni szeretnéd a fiókodat?<br />
+              Ez a művelet nem visszavonható!
+            </p>
+            <div style={styles.modalButtons}>
+              <button 
+                style={styles.modalCancelButton} 
+                onClick={closeDeleteConfirm}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = darkMode ? '#4b5563' : '#cbd5e1';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = darkMode ? '#3d3d4e' : '#e2e8f0';
+                }}
+              >
+                Mégse
+              </button>
+              <button 
+                style={styles.modalConfirmButton} 
+                onClick={performDeleteAccount}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#dc2626';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#ef4444';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                Törlés
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
