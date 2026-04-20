@@ -29,12 +29,25 @@ interface OrderStatus {
   };
 }
 
+interface LeaderboardEntry {
+  id: number;
+  username: string;
+  score: number;
+  rounds: number;
+  createdAt: string;
+}
+
 const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogout, darkMode, setDarkMode }) => {
   const [cart, setCart] = useState<CartItem | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'info'} | null>(null);
   const [hasPendingOrder, setHasPendingOrder] = useState(false);
+
+  // Leaderboard state
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [errorLeaderboard, setErrorLeaderboard] = useState<string | null>(null);
 
   const products = [
     { id: 1, name: 'Haladó szint', price: 1249, image: kep1 },
@@ -46,6 +59,9 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
     if (page === 'shop' && userId) {
       fetchCart();
       fetchOrderStatus();
+    }
+    if (page === 'leaderboard') {
+      loadLeaderboard();
     }
   }, [page, userId]);
 
@@ -67,6 +83,21 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
       setHasPendingOrder(data.rawStatus === 'PENDING');
     } catch (error) {
       console.error('Hiba a státusz lekérésekor:', error);
+    }
+  };
+
+  const loadLeaderboard = async () => {
+    setLoadingLeaderboard(true);
+    setErrorLeaderboard(null);
+    try {
+      const response = await fetch('http://localhost:3000/members');
+      if (!response.ok) throw new Error(`Hiba: ${response.status}`);
+      const data = await response.json();
+      setLeaderboard(data);
+    } catch (err: any) {
+      setErrorLeaderboard(err.message);
+    } finally {
+      setLoadingLeaderboard(false);
     }
   };
 
@@ -187,14 +218,11 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
 
   const getTitle = () => {
     switch(page) {
-      case 'rolunk':
-        return 'Rólunk';
-      case 'beallitasok':
-        return 'Beállítások';
-      case 'shop':
-        return 'Shop';
-      default:
-        return '';
+      case 'rolunk': return 'Rólunk';
+      case 'beallitasok': return 'Beállítások';
+      case 'shop': return 'Shop';
+      case 'leaderboard': return 'Ranglista';
+      default: return '';
     }
   };
 
@@ -204,14 +232,10 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
 
   const getStatusColor = (rawStatus?: string) => {
     switch(rawStatus) {
-      case 'PENDING':
-        return '#f97316';
-      case 'COMPLETED':
-        return '#22c55e';
-      case 'CANCELLED':
-        return '#ef4444';
-      default:
-        return '#64748b';
+      case 'PENDING': return '#f97316';
+      case 'COMPLETED': return '#22c55e';
+      case 'CANCELLED': return '#ef4444';
+      default: return '#64748b';
     }
   };
 
@@ -219,6 +243,389 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
     return !hasPendingOrder && !cart;
   };
 
+  // ---------------------- STÍLUSOK ----------------------
+  const styles: { [key: string]: React.CSSProperties } = {
+    container: {
+      padding: '40px',
+      textAlign: 'center',
+      backgroundColor: darkMode ? '#1e1e2e' : '#f8fafc',
+      minHeight: '100vh',
+      transition: 'background-color 0.3s'
+    },
+    title: {
+      fontSize: '2.5em',
+      color: darkMode ? '#e2e8f0' : '#1e293b',
+      marginBottom: '30px',
+      fontWeight: 700,
+      letterSpacing: '-0.02em',
+      transition: 'color 0.3s'
+    },
+    backButton: {
+      padding: '12px 28px',
+      background: '#4361ee',
+      color: 'white',
+      border: 'none',
+      borderRadius: '40px',
+      cursor: 'pointer',
+      fontSize: '16px',
+      fontWeight: 600,
+      marginTop: '20px',
+      boxShadow: '0 8px 15px -5px rgba(67,97,238,0.4)',
+      transition: 'all 0.2s'
+    },
+    contentContainer: {
+      marginTop: '30px',
+      padding: '30px',
+      background: '#ffffff',
+      borderRadius: '24px',
+      minHeight: '200px',
+      boxShadow: '0 20px 35px -10px rgba(0,0,0,0.1)'
+    },
+    darkContentContainer: {
+      marginTop: '30px',
+      padding: '30px',
+      background: '#2d2d3a',
+      borderRadius: '24px',
+      minHeight: '200px',
+      boxShadow: '0 20px 35px -10px rgba(0,0,0,0.3)'
+    },
+    text: {
+      color: '#334155',
+      lineHeight: 1.8,
+      fontSize: '22px',
+      textAlign: 'justify',
+      marginBottom: '30px'
+    },
+    darkText: {
+      color: '#e2e8f0',
+      lineHeight: 1.8,
+      fontSize: '22px',
+      textAlign: 'justify',
+      marginBottom: '30px'
+    },
+    imageContainer: {
+      textAlign: 'center',
+      marginTop: '30px'
+    },
+    bottomImage: {
+      maxWidth: '600px',
+      width: '100%',
+      height: 'auto',
+      borderRadius: '16px',
+      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)'
+    },
+    settingItem: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '20px',
+      padding: '20px',
+      borderBottom: darkMode ? '1px solid #3d3d4e' : '1px solid #e2e8f0'
+    },
+    settingLabel: {
+      fontSize: '18px',
+      color: '#334155',
+      fontWeight: 500,
+      flex: 1,
+      textAlign: 'left'
+    },
+    darkSettingLabel: {
+      fontSize: '18px',
+      color: '#e2e8f0',
+      fontWeight: 500,
+      flex: 1,
+      textAlign: 'left'
+    },
+    darkModeButton: {
+      padding: '10px 20px',
+      border: 'none',
+      borderRadius: '40px',
+      cursor: 'pointer',
+      fontSize: '15px',
+      fontWeight: 600,
+      minWidth: '140px',
+      transition: 'all 0.2s',
+      backgroundColor: darkMode ? '#f1f5f9' : '#1e293b',
+      color: darkMode ? '#1e293b' : '#f1f5f9'
+    },
+    downloadButton: {
+      padding: '10px 20px',
+      background: '#4361ee',
+      color: 'white',
+      border: 'none',
+      borderRadius: '40px',
+      cursor: 'pointer',
+      fontSize: '15px',
+      fontWeight: 600,
+      minWidth: '140px',
+      transition: 'all 0.2s',
+      boxShadow: '0 5px 10px -3px rgba(67,97,238,0.4)'
+    },
+    deleteAccountButton: {
+      padding: '10px 20px',
+      background: '#ef4444',
+      color: 'white',
+      border: 'none',
+      borderRadius: '40px',
+      cursor: 'pointer',
+      fontSize: '15px',
+      fontWeight: 600,
+      minWidth: '140px',
+      transition: 'all 0.2s',
+      boxShadow: '0 5px 10px -3px rgba(239,68,68,0.4)'
+    },
+    statusBar: {
+      padding: '20px',
+      borderRadius: '16px',
+      marginBottom: '20px',
+      textAlign: 'left',
+      boxShadow: '0 5px 15px -5px rgba(0,0,0,0.1)'
+    },
+    statusTitle: {
+      margin: '0 0 10px 0',
+      fontSize: '18px',
+      fontWeight: 600
+    },
+    statusText: {
+      margin: '5px 0',
+      fontWeight: 700,
+      fontSize: '18px'
+    },
+    statusDetail: {
+      margin: '5px 0',
+      color: darkMode ? '#94a3b8' : '#64748b',
+      fontSize: '14px'
+    },
+    successMessage: {
+      background: '#dcfce7',
+      color: '#166534',
+      padding: '15px 20px',
+      borderRadius: '30px',
+      marginBottom: '20px',
+      fontWeight: 500
+    },
+    errorMessage: {
+      background: '#fee2e2',
+      color: '#b91c1c',
+      padding: '15px 20px',
+      borderRadius: '30px',
+      marginBottom: '20px',
+      fontWeight: 500
+    },
+    infoMessage: {
+      background: '#dbeafe',
+      color: '#1e40af',
+      padding: '15px 20px',
+      borderRadius: '30px',
+      marginBottom: '20px',
+      fontWeight: 500
+    },
+    warningMessage: {
+      background: '#fff3cd',
+      color: '#92400e',
+      padding: '15px 20px',
+      borderRadius: '30px',
+      marginBottom: '20px',
+      border: '1px solid #fbbf24',
+      fontWeight: 600
+    },
+    activeCart: {
+      padding: '20px',
+      borderRadius: '16px',
+      marginBottom: '20px',
+      boxShadow: '0 5px 15px -5px rgba(0,0,0,0.1)'
+    },
+    cartTitle: {
+      margin: '0 0 15px 0',
+      fontSize: '18px',
+      fontWeight: 600
+    },
+    cartItem: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '15px',
+      borderRadius: '12px',
+      boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)'
+    },
+    cartActions: {
+      display: 'flex',
+      gap: '12px'
+    },
+    removeButton: {
+      padding: '8px 16px',
+      background: '#ef4444',
+      color: 'white',
+      border: 'none',
+      borderRadius: '30px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: 600,
+      transition: 'all 0.2s'
+    },
+    checkoutButton: {
+      padding: '8px 16px',
+      background: '#22c55e',
+      color: 'white',
+      border: 'none',
+      borderRadius: '30px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: 600,
+      transition: 'all 0.2s'
+    },
+    shopContainer: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+      gap: '30px',
+      padding: '20px 0'
+    },
+    card: {
+      borderRadius: '24px',
+      padding: '25px 20px',
+      boxShadow: '0 15px 30px -10px rgba(0,0,0,0.2)',
+      transition: 'transform 0.3s, box-shadow 0.3s',
+      cursor: 'pointer',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      border: darkMode ? '1px solid #3d3d4e' : 'none'
+    },
+    cardImage: {
+      width: '160px',
+      height: '160px',
+      objectFit: 'contain',
+      marginBottom: '20px'
+    },
+    cardTitle: {
+      fontSize: '20px',
+      fontWeight: 600,
+      marginBottom: '10px'
+    },
+    cardPrice: {
+      fontSize: '24px',
+      fontWeight: 700,
+      color: '#4361ee',
+      marginBottom: '20px'
+    },
+    cardButton: {
+      padding: '12px 24px',
+      background: '#4361ee',
+      color: 'white',
+      border: 'none',
+      borderRadius: '40px',
+      cursor: 'pointer',
+      fontSize: '16px',
+      fontWeight: 600,
+      transition: 'all 0.2s',
+      width: '100%',
+      maxWidth: '200px'
+    },
+    disabledButton: {
+      padding: '12px 24px',
+      background: '#cbd5e1',
+      color: '#64748b',
+      border: 'none',
+      borderRadius: '40px',
+      cursor: 'not-allowed',
+      fontSize: '16px',
+      fontWeight: 600,
+      width: '100%',
+      maxWidth: '200px'
+    },
+    // Leaderboard specifikus stílusok
+    leaderboardHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '20px'
+    },
+    leaderboardTitle: {
+      color: darkMode ? '#e2e8f0' : '#1e293b',
+      margin: 0,
+      fontSize: '24px',
+      fontWeight: 700
+    },
+    refreshButton: {
+      padding: '8px 16px',
+      background: '#4361ee',
+      color: 'white',
+      border: 'none',
+      borderRadius: '20px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: 600,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '5px',
+      transition: 'all 0.2s'
+    },
+    leaderboardTableContainer: {
+      overflowX: 'auto',
+      marginTop: '20px',
+      borderRadius: '16px',
+      border: darkMode ? '1px solid #3d3d4e' : '1px solid #e2e8f0'
+    },
+    leaderboardTable: {
+      width: '100%',
+      borderCollapse: 'collapse',
+      textAlign: 'left',
+      minWidth: '600px'
+    },
+    tableHeader: {
+      borderBottom: darkMode ? '2px solid #4b5563' : '2px solid #e2e8f0',
+      backgroundColor: darkMode ? '#252532' : '#f8fafc'
+    },
+    tableHeaderCell: {
+      padding: '14px 16px',
+      color: darkMode ? '#cbd5e1' : '#475569',
+      fontWeight: 600,
+      fontSize: '14px',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px'
+    },
+    tableRow: {
+      borderBottom: darkMode ? '1px solid #3d3d4e' : '1px solid #e2e8f0',
+      transition: 'background-color 0.2s'
+    },
+    tableCell: {
+      padding: '12px 16px',
+      color: darkMode ? '#e2e8f0' : '#1e293b'
+    },
+    rankCell: {
+      padding: '12px 16px',
+      color: darkMode ? '#e2e8f0' : '#1e293b',
+      fontWeight: 600
+    },
+    scoreCell: {
+      padding: '12px 16px',
+      color: '#4361ee',
+      fontWeight: 600
+    },
+    secondaryCell: {
+      padding: '12px 16px',
+      color: darkMode ? '#94a3b8' : '#64748b'
+    },
+    loadingText: {
+      textAlign: 'center',
+      padding: '40px',
+      color: darkMode ? '#94a3b8' : '#64748b',
+      fontSize: '16px'
+    },
+    errorContainer: {
+      textAlign: 'center',
+      padding: '40px',
+      color: '#ef4444'
+    },
+    emptyText: {
+      textAlign: 'center',
+      padding: '40px',
+      color: darkMode ? '#94a3b8' : '#64748b',
+      fontSize: '16px'
+    }
+  };
+
+  // ---------------------- RENDER ----------------------
   const renderContent = () => {
     switch(page) {
       case 'rolunk':
@@ -242,11 +649,7 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
               </span>
               <button
                 onClick={toggleDarkMode}
-                style={{
-                  ...styles.darkModeButton,
-                  backgroundColor: darkMode ? '#f1f5f9' : '#1e293b',
-                  color: darkMode ? '#1e293b' : '#f1f5f9',
-                }}
+                style={styles.darkModeButton}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = darkMode ? '#e2e8f0' : '#334155';
                 }}
@@ -263,7 +666,7 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
                 Letöltés
               </span>
               <button
-                onClick={() => window.open('https://github.com/Gergo2005', '_blank')}
+                onClick={() => window.open('https://github.com/Gergo2005/GeoHun', '_blank')}
                 style={styles.downloadButton}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = '#5a6fd8';
@@ -415,297 +818,90 @@ const PageContent: React.FC<PageContentProps> = ({ page, onBack, userId, onLogou
           </div>
         );
       
+      case 'leaderboard':
+        return (
+          <div style={darkMode ? styles.darkContentContainer : styles.contentContainer}>
+            <div style={styles.leaderboardHeader}>
+              <h2 style={styles.leaderboardTitle}>🏆 Legjobb játékosok</h2>
+              <button 
+                onClick={loadLeaderboard}
+                style={styles.refreshButton}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#5a6fd8';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#4361ee';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                🔄 Frissítés
+              </button>
+            </div>
+
+            {loadingLeaderboard ? (
+              <p style={styles.loadingText}>Ranglista betöltése...</p>
+            ) : errorLeaderboard ? (
+              <div style={styles.errorContainer}>
+                <p>❌ Hiba: {errorLeaderboard}</p>
+                <button 
+                  onClick={loadLeaderboard} 
+                  style={{...styles.refreshButton, marginTop: '15px'}}
+                >
+                  Újrapróbálkozás
+                </button>
+              </div>
+            ) : leaderboard.length === 0 ? (
+              <p style={styles.emptyText}>Még nincs eredmény. Játssz egyet!</p>
+            ) : (
+              <div style={styles.leaderboardTableContainer}>
+                <table style={styles.leaderboardTable}>
+                  <thead>
+                    <tr style={styles.tableHeader}>
+                      <th style={styles.tableHeaderCell}>#</th>
+                      <th style={styles.tableHeaderCell}>Név</th>
+                      <th style={styles.tableHeaderCell}>Pont</th>
+                      <th style={styles.tableHeaderCell}>Körök</th>
+                      <th style={styles.tableHeaderCell}>Dátum</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((entry, index) => (
+                      <tr 
+                        key={entry.id} 
+                        style={{
+                          ...styles.tableRow,
+                          backgroundColor: index % 2 === 0 
+                            ? (darkMode ? '#1e1e2e' : '#ffffff') 
+                            : (darkMode ? '#2d2d3a' : '#fafafa')
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = darkMode ? '#3d3d4e' : '#f1f5f9';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = index % 2 === 0 
+                            ? (darkMode ? '#1e1e2e' : '#ffffff') 
+                            : (darkMode ? '#2d2d3a' : '#fafafa');
+                        }}
+                      >
+                        <td style={styles.rankCell}>{index + 1}</td>
+                        <td style={styles.tableCell}>{entry.username}</td>
+                        <td style={styles.scoreCell}>{entry.score}</td>
+                        <td style={styles.secondaryCell}>{entry.rounds}</td>
+                        <td style={styles.secondaryCell}>
+                          {new Date(entry.createdAt).toLocaleString('hu-HU')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      
       default:
         return null;
-    }
-  };
-
-  const styles = {
-    container: {
-      padding: '40px',
-      textAlign: 'center' as const,
-      backgroundColor: darkMode ? '#1e1e2e' : '#f8fafc',
-      minHeight: '100vh',
-      transition: 'background-color 0.3s'
-    },
-    title: {
-      fontSize: '2.5em',
-      color: darkMode ? '#e2e8f0' : '#1e293b',
-      marginBottom: '30px',
-      fontWeight: 700,
-      letterSpacing: '-0.02em',
-      transition: 'color 0.3s'
-    },
-    backButton: {
-      padding: '12px 28px',
-      background: '#4361ee',
-      color: 'white',
-      border: 'none',
-      borderRadius: '40px',
-      cursor: 'pointer',
-      fontSize: '16px',
-      fontWeight: 600,
-      marginTop: '20px',
-      boxShadow: '0 8px 15px -5px rgba(67,97,238,0.4)',
-      transition: 'all 0.2s'
-    },
-    contentContainer: {
-      marginTop: '30px',
-      padding: '30px',
-      background: '#ffffff',
-      borderRadius: '24px',
-      minHeight: '200px',
-      boxShadow: '0 20px 35px -10px rgba(0,0,0,0.1)'
-    },
-    darkContentContainer: {
-      marginTop: '30px',
-      padding: '30px',
-      background: '#2d2d3a',
-      borderRadius: '24px',
-      minHeight: '200px',
-      boxShadow: '0 20px 35px -10px rgba(0,0,0,0.3)'
-    },
-    text: {
-      color: '#334155',
-      lineHeight: '1.8',
-      fontSize: '22px',
-      textAlign: 'justify' as const,
-      marginBottom: '30px'
-    },
-    darkText: {
-      color: '#e2e8f0',
-      lineHeight: '1.8',
-      fontSize: '22px',
-      textAlign: 'justify' as const,
-      marginBottom: '30px'
-    },
-    imageContainer: {
-      textAlign: 'center' as const,
-      marginTop: '30px'
-    },
-    bottomImage: {
-      maxWidth: '600px',
-      width: '100%',
-      height: 'auto',
-      borderRadius: '16px',
-      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)'
-    },
-    settingItem: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '20px',
-      padding: '20px',
-      borderBottom: darkMode ? '1px solid #3d3d4e' : '1px solid #e2e8f0'
-    },
-    settingLabel: {
-      fontSize: '18px',
-      color: '#334155',
-      fontWeight: 500,
-      flex: 1,
-      textAlign: 'left' as const
-    },
-    darkSettingLabel: {
-      fontSize: '18px',
-      color: '#e2e8f0',
-      fontWeight: 500,
-      flex: 1,
-      textAlign: 'left' as const
-    },
-    darkModeButton: {
-      padding: '10px 20px',
-      border: 'none',
-      borderRadius: '40px',
-      cursor: 'pointer',
-      fontSize: '15px',
-      fontWeight: 600,
-      minWidth: '140px',
-      transition: 'all 0.2s',
-    },
-    downloadButton: {
-      padding: '10px 20px',
-      background: '#4361ee',
-      color: 'white',
-      border: 'none',
-      borderRadius: '40px',
-      cursor: 'pointer',
-      fontSize: '15px',
-      fontWeight: 600,
-      minWidth: '140px',
-      transition: 'all 0.2s',
-      boxShadow: '0 5px 10px -3px rgba(67,97,238,0.4)'
-    },
-    deleteAccountButton: {
-      padding: '10px 20px',
-      background: '#ef4444',
-      color: 'white',
-      border: 'none',
-      borderRadius: '40px',
-      cursor: 'pointer',
-      fontSize: '15px',
-      fontWeight: 600,
-      minWidth: '140px',
-      transition: 'all 0.2s',
-      boxShadow: '0 5px 10px -3px rgba(239,68,68,0.4)'
-    },
-    statusBar: {
-      padding: '20px',
-      borderRadius: '16px',
-      marginBottom: '20px',
-      textAlign: 'left' as const,
-      boxShadow: '0 5px 15px -5px rgba(0,0,0,0.1)'
-    },
-    statusTitle: {
-      margin: '0 0 10px 0',
-      fontSize: '18px',
-      fontWeight: 600
-    },
-    statusText: {
-      margin: '5px 0',
-      fontWeight: '700',
-      fontSize: '18px'
-    },
-    statusDetail: {
-      margin: '5px 0',
-      color: darkMode ? '#94a3b8' : '#64748b',
-      fontSize: '14px'
-    },
-    successMessage: {
-      background: '#dcfce7',
-      color: '#166534',
-      padding: '15px 20px',
-      borderRadius: '30px',
-      marginBottom: '20px',
-      fontWeight: 500
-    },
-    errorMessage: {
-      background: '#fee2e2',
-      color: '#b91c1c',
-      padding: '15px 20px',
-      borderRadius: '30px',
-      marginBottom: '20px',
-      fontWeight: 500
-    },
-    infoMessage: {
-      background: '#dbeafe',
-      color: '#1e40af',
-      padding: '15px 20px',
-      borderRadius: '30px',
-      marginBottom: '20px',
-      fontWeight: 500
-    },
-    warningMessage: {
-      background: '#fff3cd',
-      color: '#92400e',
-      padding: '15px 20px',
-      borderRadius: '30px',
-      marginBottom: '20px',
-      border: '1px solid #fbbf24',
-      fontWeight: 600
-    },
-    activeCart: {
-      padding: '20px',
-      borderRadius: '16px',
-      marginBottom: '20px',
-      boxShadow: '0 5px 15px -5px rgba(0,0,0,0.1)'
-    },
-    cartTitle: {
-      margin: '0 0 15px 0',
-      fontSize: '18px',
-      fontWeight: 600
-    },
-    cartItem: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '15px',
-      borderRadius: '12px',
-      boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)'
-    },
-    cartActions: {
-      display: 'flex',
-      gap: '12px'
-    },
-    removeButton: {
-      padding: '8px 16px',
-      background: '#ef4444',
-      color: 'white',
-      border: 'none',
-      borderRadius: '30px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: 600,
-      transition: 'all 0.2s'
-    },
-    checkoutButton: {
-      padding: '8px 16px',
-      background: '#22c55e',
-      color: 'white',
-      border: 'none',
-      borderRadius: '30px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: 600,
-      transition: 'all 0.2s'
-    },
-    shopContainer: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: '30px',
-      padding: '20px 0'
-    },
-    card: {
-      borderRadius: '24px',
-      padding: '25px 20px',
-      boxShadow: '0 15px 30px -10px rgba(0,0,0,0.2)',
-      transition: 'transform 0.3s, box-shadow 0.3s',
-      cursor: 'pointer',
-      display: 'flex',
-      flexDirection: 'column' as const,
-      alignItems: 'center',
-      border: darkMode ? '1px solid #3d3d4e' : 'none'
-    },
-    cardImage: {
-      width: '160px',
-      height: '160px',
-      objectFit: 'contain' as const,
-      marginBottom: '20px'
-    },
-    cardTitle: {
-      fontSize: '20px',
-      fontWeight: 600,
-      marginBottom: '10px'
-    },
-    cardPrice: {
-      fontSize: '24px',
-      fontWeight: '700',
-      color: '#4361ee',
-      marginBottom: '20px'
-    },
-    cardButton: {
-      padding: '12px 24px',
-      background: '#4361ee',
-      color: 'white',
-      border: 'none',
-      borderRadius: '40px',
-      cursor: 'pointer',
-      fontSize: '16px',
-      fontWeight: 600,
-      transition: 'all 0.2s',
-      width: '100%',
-      maxWidth: '200px'
-    },
-    disabledButton: {
-      padding: '12px 24px',
-      background: '#cbd5e1',
-      color: '#64748b',
-      border: 'none',
-      borderRadius: '40px',
-      cursor: 'not-allowed',
-      fontSize: '16px',
-      fontWeight: 600,
-      width: '100%',
-      maxWidth: '200px'
     }
   };
 

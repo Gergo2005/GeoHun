@@ -70,8 +70,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
       background: 'white',
       borderRadius: '10px',
       transition: 'all 0.3s ease',
-      transform: isOpen ? 'rotate(45deg)' : 'none',
-      opacity: isOpen ? 0.8 : 1
     },
     menu: {
       position: 'absolute' as const,
@@ -86,7 +84,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
       display: isOpen ? 'block' : 'none',
       zIndex: 1000,
       overflow: 'hidden',
-      animation: 'fadeIn 0.2s ease'
     },
     menuList: {
       listStyle: 'none',
@@ -99,14 +96,11 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
       color: darkMode ? '#e2e8f0' : '#1e293b',
       fontSize: isMobile ? '15px' : '16px',
       fontWeight: 500,
-      transition: 'background 0.2s, color 0.2s',
+      transition: 'background 0.2s',
       borderBottom: darkMode ? '1px solid #3d3d4e' : '1px solid #f1f5f9',
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
-      ':last-child': {
-        borderBottom: 'none'
-      }
     },
     userInfo: {
       padding: '16px 24px',
@@ -136,12 +130,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
 
   return (
     <div id="hamburger-menu" style={menuStyles.container}>
-      <button 
-        onClick={toggleMenu} 
-        style={menuStyles.hamburgerButton}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-      >
+      <button onClick={toggleMenu} style={menuStyles.hamburgerButton}>
         <span style={{...menuStyles.line, transform: isOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'}}></span>
         <span style={{...menuStyles.line, opacity: isOpen ? 0 : 1}}></span>
         <span style={{...menuStyles.line, transform: isOpen ? 'rotate(-45deg) translate(7px, -7px)' : 'none'}}></span>
@@ -151,60 +140,25 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
         <ul style={menuStyles.menuList}>
           {isMobile && (
             <li style={menuStyles.userInfo}>
-              <span style={{ fontSize: '20px' }}>👤</span> {username}
+              <span>👤</span> {username}
             </li>
           )}
           
-          <li 
-            style={menuStyles.menuItem}
-            onClick={() => handleMenuItemClick('rolunk')}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = darkMode ? '#3d3d4e' : '#f1f5f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
+          <li style={menuStyles.menuItem} onClick={() => handleMenuItemClick('rolunk')}>
             <span>📄</span> Rólunk
           </li>
-          
-          <li 
-            style={menuStyles.menuItem}
-            onClick={() => handleMenuItemClick('beallitasok')}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = darkMode ? '#3d3d4e' : '#f1f5f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
+          <li style={menuStyles.menuItem} onClick={() => handleMenuItemClick('beallitasok')}>
             <span>⚙️</span> Beállítások
           </li>
-          
-          <li 
-            style={menuStyles.menuItem}
-            onClick={() => handleMenuItemClick('shop')}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = darkMode ? '#3d3d4e' : '#f1f5f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
+          <li style={menuStyles.menuItem} onClick={() => handleMenuItemClick('shop')}>
             <span>🛒</span> Shop
+          </li>
+          <li style={menuStyles.menuItem} onClick={() => handleMenuItemClick('leaderboard')}>
+            <span>🏆</span> Ranglista
           </li>
           
           {isMobile && onLogout && (
-            <li 
-              style={menuStyles.logoutItem}
-              onClick={handleLogoutClick}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = darkMode ? '#3d3d4e' : '#fee2e2';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
+            <li style={menuStyles.logoutItem} onClick={handleLogoutClick}>
               <span>🚪</span> Kijelentkezés
             </li>
           )}

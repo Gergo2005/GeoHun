@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Utils } from './utils';
 import MapComponent from './Map';
+import { useToast } from '../context/ToastContext';
 
 interface GameProps {
   onBackToMenu: () => void;
   gameSettings: {
     maxRounds: number;
     locationChoice: string;
+    selectedLevel: string;
+    timeLimit: number; // másodperc, 0 = korlátlan
   };
 }
 
 const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
+  const { showToast } = useToast();
   const [totalScore, setTotalScore] = useState(0);
   const [currentRound, setCurrentRound] = useState(1);
   const [targetLocation, setTargetLocation] = useState<{lat: number, lng: number} | null>(null);
@@ -22,6 +26,10 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
   const [roundScore, setRoundScore] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showRetryButtons, setShowRetryButtons] = useState(false);
+  
+  // Időzítő állapotok
+  const [timeLeft, setTimeLeft] = useState<number>(gameSettings.timeLimit);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const streetViewRef = useRef<HTMLDivElement>(null);
   const panoramaContainerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +47,37 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
     
     initRound();
   }, []);
+
+  // Időzítő kezelése
+  useEffect(() => {
+    if (isLoading || showResults) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+
+    if (gameSettings.timeLimit > 0) {
+      setTimeLeft(gameSettings.timeLimit);
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            showToast('⏰ Idő lejárt! Továbblépés...', 'info');
+            if (currentRound >= gameSettings.maxRounds) {
+              endGame();
+            } else {
+              nextRound();
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isLoading, showResults, currentRound, gameSettings.timeLimit]);
 
   useEffect(() => {
     return () => {
@@ -94,7 +133,7 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
     }
 
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 15; // Több próbálkozás
 
     const tryRandomLocation = () => {
       attempts++;
@@ -129,6 +168,7 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
           if (attempts < maxAttempts) {
             setTimeout(tryRandomLocation, 800);
           } else {
+            // Próbáljunk meg fallback helyszíneket
             loadFallbackLocation();
           }
         }
@@ -152,16 +192,24 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
     }
   }, [gameSettings.locationChoice]);
 
+  // Bővített fallback helyszínek, hogy nagyobb eséllyel legyen kép
   const loadFallbackLocation = useCallback(() => {
     if (!streetViewServiceRef.current) return;
     
     const fallbackLocations = [
-      { lat: 47.4983, lng: 19.0434 },
-      { lat: 47.5008, lng: 19.0465 },
-      { lat: 46.2530, lng: 20.1480 },
+      { lat: 47.4983, lng: 19.0434 }, // Budapest, Parlament
+      { lat: 47.5008, lng: 19.0465 }, // Budapest, Lánchíd
+      { lat: 46.2530, lng: 20.1480 }, // Szeged, Dóm tér
+      { lat: 47.5299, lng: 21.6393 }, // Debrecen, Nagytemplom
+      { lat: 46.0731, lng: 18.2285 }, // Pécs, Székesegyház
+      { lat: 47.1741, lng: 19.8026 }, // Kecskemét, Városháza
+      { lat: 47.6875, lng: 17.6504 }, // Győr, Bazilika
+      { lat: 48.1035, lng: 20.7884 }, // Miskolc, Avas kilátó
     ];
     
+    // Véletlenszerű fallback
     const fallback = fallbackLocations[Math.floor(Math.random() * fallbackLocations.length)];
+    console.log("🔄 Fallback helyszín:", fallback);
     
     streetViewServiceRef.current.getPanorama({
       location: fallback,
@@ -171,6 +219,7 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
         console.log("🔄 Fallback Street View betöltése");
         loadStreetView(data);
       } else {
+        console.error("❌ Még fallback sem működik:", status);
         handleNoStreetViewFound();
       }
     });
@@ -256,6 +305,12 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
         onPanoramaLoaded();
       } else if (status === 'UNKNOWN_ERROR') {
         console.log("⚠️ Street View hiba");
+        // Ha hosszú ideig nem tölt be, próbáljuk újra
+        setTimeout(() => {
+          if (!panoramaLoaded) {
+            handlePanoramaError("Nem sikerült betölteni a panorámát");
+          }
+        }, 8000);
       }
     });
 
@@ -265,23 +320,18 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
       }
     });
 
-    setTimeout(() => {
-      if (!panoramaLoaded && panorama.getPano()) {
-        onPanoramaLoaded();
-      }
-    }, 2000);
-
+    // Biztonsági időzítő
     setTimeout(() => {
       if (!panoramaLoaded) {
-        console.log("⏰ Timeout");
+        console.log("⏰ Timeout - újrapróbálkozás");
         handlePanoramaError("Betöltési időtúllépés");
       }
-    }, 10000);
+    }, 12000);
   }, []);
 
   const handleNoStreetViewFound = useCallback(() => {
     setIsLoading(false);
-    setErrorMessage("Nem található Street View a kiválasztott területen.");
+    setErrorMessage("Nem található Street View a kiválasztott területen. Próbáld újra!");
     setShowRetryButtons(true);
   }, []);
 
@@ -302,12 +352,12 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
 
   const checkGuess = useCallback(() => {
     if (!playerMarker) {
-      alert("Helyezz el egy tippet!");
+      showToast('Helyezz el egy tippet a térképen!', 'warning');
       return;
     }
 
     if (!targetLocation) {
-      alert("Hiba: nincs célhely!");
+      showToast('Hiba: nincs célhely!', 'error');
       return;
     }
 
@@ -326,11 +376,13 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
     setRoundScore(`Távolság: ${distance.toFixed(2)} km | Pont: ${score}`);
     setShowResults(true);
     setTotalScore(newTotalScore);
-  }, [playerMarker, targetLocation, totalScore]);
+    
+    // Időzítő leállítása
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, [playerMarker, targetLocation, totalScore, showToast]);
 
   const nextRound = useCallback(() => {
     if (currentRound >= gameSettings.maxRounds) {
-      alert(`Játék vége! Összpontszám: ${totalScore}`);
       endGame();
       return;
     }
@@ -378,8 +430,9 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
     setErrorMessage(null);
     setShowRetryButtons(false);
 
+    showToast(`Játék vége! Összpontszám: ${score}`, 'success');
     onBackToMenu();
-  }, [onBackToMenu, totalScore, gameSettings.maxRounds]);
+  }, [onBackToMenu, totalScore, gameSettings.maxRounds, showToast]);
 
   const updatePlayerMarker = useCallback((marker: google.maps.Marker) => {
     setPlayerMarker(marker);
@@ -402,6 +455,28 @@ const Game: React.FC<GameProps> = ({ onBackToMenu, gameSettings }) => {
         <span>🏆 Összpont: {totalScore}</span>
         <span>🎯 Kör: {currentRound}/{gameSettings.maxRounds}</span>
       </div>
+
+      {/* Időzítő kijelzése - JAVÍTOTT SZÍN */}
+      {gameSettings.timeLimit > 0 && !isLoading && !showResults && (
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '15px',
+          fontSize: '28px',
+          fontWeight: 'bold',
+          // Új színlogika: alap kék, 30 mp alatt narancs, 10 mp alatt piros
+          color: timeLeft <= 10 ? '#ef4444' : (timeLeft <= 30 ? '#f59e0b' : '#3b82f6'),
+          background: 'rgba(0,0,0,0.05)',
+          padding: '5px',
+          borderRadius: '40px',
+          display: 'inline-block',
+          width: 'auto',
+          margin: '0 auto 15px',
+          paddingLeft: '20px',
+          paddingRight: '20px'
+        }}>
+          ⏳ {timeLeft} mp
+        </div>
+      )}
 
       <section 
         ref={streetViewRef}

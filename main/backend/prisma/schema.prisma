@@ -9,42 +9,50 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum UserStatus {
+  ACTIVE
+  BANNED
+  DELETED
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
+  id        Int         @id @default(autoincrement())
+  username  String      @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  cart      Cart?    // Egyirányú kapcsolat
+  status    UserStatus  @default(ACTIVE)
+  deletedAt DateTime?   // soft delete időbélyeg
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  cart      Cart?       // Egyirányú kapcsolat
   orders    Order[]
 }
 
 model Cart {
-  id           Int      @id @default(autoincrement())
-  userId       Int      @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           Int         @id @default(autoincrement())
+  userId       Int         @unique
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   productName  String?
   productPrice Int?
-  status       CartStatus @default(EMPTY)
-  updatedAt    DateTime @updatedAt
+  status       CartStatus  @default(EMPTY)
+  updatedAt    DateTime    @updatedAt
 }
 
 model Order {
-  id           Int      @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   userId       Int
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   productName  String
   productPrice Int
-  status       OrderStatus @default(PENDING)
-  createdAt    DateTime @default(now())
+  status       OrderStatus  @default(PENDING)
+  createdAt    DateTime     @default(now())
 }
 
 model members {
-  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  id         BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
   name       String
   gender     members_gender?
-  birth_date DateTime @db.Date
-  banned     Boolean  @default(false)
+  birth_date DateTime       @db.Date
+  banned     Boolean        @default(false)
   created_at DateTime?
   updated_at DateTime?
 }

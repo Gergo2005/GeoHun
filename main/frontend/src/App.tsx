@@ -4,6 +4,7 @@ import Game from './components/Game';
 import { Auth } from './components/Auth';
 import HamburgerMenu from './components/HamburgerMenu';
 import PageContent from './components/PageContent';
+import { ToastProvider } from './context/ToastContext';
 
 interface UserData {
   userId: number;
@@ -13,7 +14,8 @@ interface UserData {
 interface GameSettings {
   maxRounds: number;
   locationChoice: string;
-  selectedLevel: string; // Új mező a kiválasztott szinthez
+  selectedLevel: string;
+  timeLimit: number; // másodpercben
 }
 
 const App: React.FC = () => {
@@ -24,17 +26,16 @@ const App: React.FC = () => {
   const [gameSettings, setGameSettings] = useState<GameSettings>({
     maxRounds: 5,
     locationChoice: 'magyarország',
-    selectedLevel: ''
+    selectedLevel: 'Alap szint',
+    timeLimit: 0,
   });
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // Sötét mód állapota localStorage-ból
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
 
-  // Body stílusának beállítása darkMode függvényében
   useEffect(() => {
     if (darkMode) {
       document.body.style.backgroundColor = '#1e1e2e';
@@ -46,7 +47,6 @@ const App: React.FC = () => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Ellenőrizzük, hogy van-e mentett bejelentkezés
   useEffect(() => {
     const savedUserId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
     const savedUsername = localStorage.getItem('username') || sessionStorage.getItem('username');
@@ -59,7 +59,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Resize listener a mobil nézethez
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -85,10 +84,17 @@ const App: React.FC = () => {
   };
 
   const handleStartGame = (rounds: number, location: string, level: string) => {
+    const levelTimeMap: Record<string, number> = {
+      'Alap szint': 0,
+      'Haladó szint': 60,
+      'Lehetetlen szint': 30,
+      'Isteni szint': 5,
+    };
     setGameSettings({
       maxRounds: rounds,
       locationChoice: location,
-      selectedLevel: level
+      selectedLevel: level,
+      timeLimit: levelTimeMap[level] || 0,
     });
     setIsInGame(true);
     setCurrentPage(null);
@@ -208,41 +214,43 @@ const App: React.FC = () => {
   };
 
   return (
-    <div>
-      <header style={headerStyles.container}>
-        <div style={headerStyles.leftSection}>
-          <HamburgerMenu 
-            onMenuItemClick={handleMenuItemClick} 
-            onLogout={handleLogout}
-            username={userData?.username || ''}
-            isMobile={isMobile}
-            darkMode={darkMode}
-          />
-        </div>
-        <h1 style={headerStyles.title}>Magyar GeoGuessr</h1>
-        <div style={headerStyles.rightSection}>
-          <span style={headerStyles.username}>Üdv, {userData?.username}!</span>
-          <button
-            onClick={handleLogout}
-            style={headerStyles.logoutButton}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'white';
-              e.currentTarget.style.color = darkMode ? '#1d3557' : '#3a0ca3';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = 'white';
-            }}
-          >
-            Kijelentkezés
-          </button>
-        </div>
-      </header>
+    <ToastProvider>
+      <div>
+        <header style={headerStyles.container}>
+          <div style={headerStyles.leftSection}>
+            <HamburgerMenu 
+              onMenuItemClick={handleMenuItemClick} 
+              onLogout={handleLogout}
+              username={userData?.username || ''}
+              isMobile={isMobile}
+              darkMode={darkMode}
+            />
+          </div>
+          <h1 style={headerStyles.title}>Magyar GeoGuessr</h1>
+          <div style={headerStyles.rightSection}>
+            <span style={headerStyles.username}>Üdv, {userData?.username}!</span>
+            <button
+              onClick={handleLogout}
+              style={headerStyles.logoutButton}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'white';
+                e.currentTarget.style.color = darkMode ? '#1d3557' : '#3a0ca3';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'white';
+              }}
+            >
+              Kijelentkezés
+            </button>
+          </div>
+        </header>
 
-      <main style={headerStyles.mainContent}>
-        {renderContent()}
-      </main>
-    </div>
+        <main style={headerStyles.mainContent}>
+          {renderContent()}
+        </main>
+      </div>
+    </ToastProvider>
   );
 };
 

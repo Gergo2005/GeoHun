@@ -61,7 +61,12 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>{isLogin ? 'Bejelentkezés' : 'Regisztráció'}</h1>
+        <div className="auth-header">
+          <h1>{isLogin ? 'Üdv újra!' : 'Csatlakozz hozzánk'}</h1>
+          <p className="auth-subtitle">
+            {isLogin ? 'Jelentkezz be a folytatáshoz' : 'Hozz létre egy fiókot'}
+          </p>
+        </div>
         
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
@@ -75,7 +80,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Felhasználónév"
+              placeholder="pl. johndoe"
               required
               disabled={loading}
             />
@@ -89,7 +94,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Jelszó"
+              placeholder="••••••••"
               required
               disabled={loading}
             />
@@ -108,7 +113,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
             </div>
           )}
 
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading} className="auth-button">
             {loading ? 'Feldolgozás...' : isLogin ? 'Bejelentkezés' : 'Regisztráció'}
           </button>
         </form>
@@ -116,11 +121,17 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         <div className="toggle-auth">
           {isLogin ? (
             <p>
-              Nincs fiók? <button onClick={() => setIsLogin(false)}>Regisztráljon</button>
+              Nincs még fiókod?{' '}
+              <button onClick={() => setIsLogin(false)} className="toggle-button">
+                Regisztrálj
+              </button>
             </p>
           ) : (
             <p>
-              Van már fiók? <button onClick={() => setIsLogin(true)}>Lépjen be</button>
+              Van már fiókod?{' '}
+              <button onClick={() => setIsLogin(true)} className="toggle-button">
+                Lépj be
+              </button>
             </p>
           )}
         </div>

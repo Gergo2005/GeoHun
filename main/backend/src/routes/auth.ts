@@ -1,5 +1,5 @@
 import express, { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const router = Router();
@@ -14,7 +14,6 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Felhasználónév és jelszó szükséges' });
     }
 
-    // Ellenőrizz, hogy a felhasználónév már létezik-e
     const existingUser = await prisma.user.findUnique({
       where: { username },
     });
@@ -23,14 +22,13 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'Felhasználónév már foglalt' });
     }
 
-    // Jelszó hashelése
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Új felhasználó létrehozása
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
+        status: UserStatus.ACTIVE,
       },
     });
 
@@ -49,7 +47,6 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Felhasználónév és jelszó szükséges' });
     }
 
-    // Felhasználó keresése
     const user = await prisma.user.findUnique({
       where: { username },
     });
@@ -58,9 +55,15 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Hibás felhasználónév vagy jelszó' });
     }
 
-    // Jelszó ellenőrzése
-    const validPassword = await bcrypt.compare(password, user.password);
+    // Státusz ellenőrzése
+    if (user.status === UserStatus.BANNED) {
+      return res.status(403).json({ error: 'A fiókod ki van tiltva.' });
+    }
+    if (user.status === UserStatus.DELETED) {
+      return res.status(403).json({ error: 'A fiókod törölve lett.' });
+    }
 
+    const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Hibás felhasználónév vagy jelszó' });
     }
@@ -71,17 +74,20 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-// Felhasználó törlése
+// Felhasználó törlése (soft delete)
 router.delete('/delete/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    // Először töröljük a kapcsolódó rekordokat (a Prisma automatikusan kezeli a cascade miatt)
-    await prisma.user.delete({
-      where: { id: parseInt(userId) }
+    await prisma.user.update({
+      where: { id: parseInt(userId) },
+      data: {
+        status: UserStatus.DELETED,
+        deletedAt: new Date(),
+      },
     });
 
-    res.json({ message: 'Felhasználó sikeresen törölve' });
+    res.json({ message: 'Felhasználó sikeresen törölve (soft delete)' });
   } catch (error) {
     console.error('Hiba a felhasználó törlésekor:', error);
     res.status(500).json({ error: 'Szerver hiba a felhasználó törlésekor' });

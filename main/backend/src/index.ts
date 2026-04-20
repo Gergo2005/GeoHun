@@ -1,8 +1,8 @@
 import express from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, UserStatus } from "@prisma/client";
 import cors from "cors";
 import authRoutes from "./routes/auth";
-import shopRoutes from "./routes/shop"; // Ez az import legyen meg
+import shopRoutes from "./routes/shop";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './swagger';
 
-// CORS beállítások
 const corsOptions = {
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -22,20 +21,56 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-
-// Route-ok regisztrálása - FONTOS sorrend!
 app.use('/auth', authRoutes);
-app.use('/shop', shopRoutes); // Ez kell, hogy legyen!
-
-// Swagger dokumentáció endpoint
+app.use('/shop', shopRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Teszt endpoint a shop elérésének ellenőrzésére
 app.get('/test-shop', (req, res) => {
   res.json({ message: 'Shop router működik' });
 });
 
-// Leaderboard végpontok
+// -------------------- ADMIN VÉGPONTOK --------------------
+// Összes felhasználó lekérése (admin)
+app.get('/admin/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        status: true,
+        createdAt: true,
+        deletedAt: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Hiba a felhasználók lekérésekor' });
+  }
+});
+
+// Felhasználó státuszának módosítása (ban/unban)
+app.put('/admin/users/:userId/status', async (req, res) => {
+  const { userId } = req.params;
+  const { status } = req.body; // 'ACTIVE' vagy 'BANNED'
+
+  if (!['ACTIVE', 'BANNED'].includes(status)) {
+    return res.status(400).json({ error: 'Érvénytelen státusz' });
+  }
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(userId) },
+      data: { status: status as UserStatus },
+    });
+    res.json({ success: true, user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ error: 'Hiba a státusz frissítésekor' });
+  }
+});
+// ---------------------------------------------------------
+
+// Leaderboard
 app.get("/members", async (req, res) => {
     try {
         const leaderboard = await prisma.leaderboard.findMany({
@@ -121,4 +156,5 @@ app.listen(PORT, () => {
     console.log(`🏆 Leaderboard GET: http://localhost:${PORT}/leaderboard`);
     console.log(`🛒 Shop endpoints: http://localhost:${PORT}/shop`);
     console.log(`🔐 Auth endpoints: http://localhost:${PORT}/auth`);
+    console.log(`👥 Admin users: http://localhost:${PORT}/admin/users`);
 });

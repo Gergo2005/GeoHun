@@ -11,11 +11,7 @@ body {
   margin: 0 auto;
   padding: 20px;
   background-color: #f8fafc;
-  background-image: url('/globe.png');
-  background-repeat: no-repeat;
-  background-size: 800px;
-  background-position: center 30%;
-  background-attachment: fixed;
+  /* background-image eltávolítva */
   transition: background-color 0.3s, color 0.3s;
   line-height: 1.6;
 }
