@@ -22,11 +22,10 @@ cd backend
 npm install
 # .env fájlban állítsd be a DATABASE_URL-t (MySQL)
 npx prisma generate
-npx prisma migrate dev
+npx prisma db pull
+npx prisma db push
 npm run dev
 A backend alapértelmezett portja: 3000
-
-Swagger API dokumentáció: http://localhost:3000/api-docs
 
 3. Frontend telepítése és indítása
 cd ../frontend
@@ -36,7 +35,8 @@ A frontend alapértelmezett portja: 5173
 
 4. Adatbázis seedelése (opcionális)
 cd backend
-npm run prisma:seed
+npx tsx prisma/seed.ts
+
 Tesztelés
 E2E tesztek (Cypress)
 A frontend mappában:
@@ -62,5 +62,5 @@ A backend automatikusan generált Swagger dokumentációval rendelkezik:
 http://localhost:3000/api-docs
 
 Részletesebb leírások a videókban!
-Szerző
+
 Készítette: GeoHun csapata
